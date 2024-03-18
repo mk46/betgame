@@ -9,10 +9,10 @@ type Config struct {
 }
 
 func (app *Config) Routes() {
-	app.Router.POST("/loginuser", LoginUser(app))
-	app.Router.POST("/updateuser", RegisterUser(app))
+	app.Router.POST("/loginuser", LoginUserController(app))
+	app.Router.POST("/updateuser", UpdateUserController(app))
 	app.Router.POST("/verifyOTP", VerifyOTP(app))
-	app.Router.GET("/getuser", ValidateJWT(app))
+	app.Router.GET("/getuser", ValidateJWT(app), GetUserController(app))
 	app.Router.POST("/addgame")
 	app.Router.POST("/reschedulegame")
 	app.Router.POST("/deactivategame")
@@ -30,7 +30,7 @@ func (app *Config) Routes() {
 
 		Games{Name, number, Schedule End, Schedule start(Time), result date}
 		/login(phone)->OTP->Verify(OTP) -> Show profile
-		
+
 		/updateProfile Name,Photo,
 		/addgame
 		/reschedulegame

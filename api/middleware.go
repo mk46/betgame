@@ -19,10 +19,14 @@ func ValidateJWT(app *Config) gin.HandlerFunc {
 			return
 		}
 
-		if err := validateToken(token); err != nil {
+		phone, err := validateToken(token)
+
+		if err != nil {
 			ctx.JSON(http.StatusForbidden, JsonResponse{Status: http.StatusForbidden, Message: "Jwt token is invalid", Data: err})
 			return
 		}
+
+		ctx.Set("phone", phone)
 
 		ctx.Next()
 

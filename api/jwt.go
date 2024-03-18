@@ -10,12 +10,12 @@ import (
 
 var sampleSecretKey = []byte("GoLinuxCloudKey")
 
-func generateJWT(username string) (string, error) {
+func generateJWT(phone string) (string, error) {
 	token := jwt.New(jwt.SigningMethodHS256)
 	claims := token.Claims.(jwt.MapClaims)
 
 	claims["authorized"] = true
-	claims["username"] = username
+	claims["phone"] = phone
 	claims["exp"] = time.Now().Add(time.Minute * 1).Unix()
 
 	tokenString, err := token.SignedString(sampleSecretKey)
@@ -27,7 +27,7 @@ func generateJWT(username string) (string, error) {
 	return tokenString, nil
 }
 
-func validateToken(authtoken string) (err error) {
+func validateToken(authtoken string) (phone string, err error) {
 
 	token, err := jwt.Parse(authtoken, func(t *jwt.Token) (interface{}, error) {
 		if _, ok := t.Method.(*jwt.SigningMethodHMAC); !ok {
@@ -39,6 +39,13 @@ func validateToken(authtoken string) (err error) {
 
 	if token == nil {
 		err = errors.New("empty token")
+	}
+
+	if claims, ok := token.Claims.(jwt.MapClaims); ok {
+		if claims != nil {
+			phone = fmt.Sprint(claims["phone"])
+		}
+
 	}
 
 	return

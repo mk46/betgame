@@ -1,10 +1,12 @@
 package api
 
+import "time"
+
 type User struct {
-	Name    string `json:"name,omitempty" validate:"required"`
-	Phone   string `json:"phone,omitempty" validate:"required"`
-	Email   string `json:"email,omitempty" validate:"required"`
-	Address string `json:"address,omitempty" validate:"required"`
+	Name    string `json:"name,omitempty" validate:"required" bson:"name"`
+	Phone   string `json:"phone,omitempty" validate:"required" bson:"phone"`
+	Email   string `json:"email,omitempty" validate:"required" bson:"email"`
+	Balance int    `json:"balance,omitempty" validate:"required" bson:"balance"`
 }
 
 type ParsePhone struct {
@@ -20,4 +22,11 @@ type JsonResponse struct {
 type OTP struct {
 	Phone string `json:"phone,omitempty" validate:"required"`
 	Code  string `json:"code,omitempty" validate:"required"`
+}
+
+type Game struct {
+	Name   string    `json:"name,omitempty" validate:"required"`
+	Start  time.Time `json:"start,omitempty" validate:"required"`
+	End    time.Time `json:"end,omitempty" validate:"required"`
+	Result time.Time `json:"result,omitempty" validate:"required"`
 }
