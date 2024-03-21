@@ -306,7 +306,7 @@ func WithdrawCashController(app *Config) gin.HandlerFunc {
 
 		log.Printf("Cash added for user:%v in db\n", user)
 
-		ctx.JSON(http.StatusOK, JsonResponse{Status: http.StatusOK, Message: "Cash added successfully", Data: user})
+		ctx.JSON(http.StatusOK, JsonResponse{Status: http.StatusOK, Message: "Cash withdrew successfully", Data: user})
 
 	}
 }
