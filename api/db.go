@@ -74,3 +74,50 @@ func DeleteUser(ctx context.Context, db *mongo.Database, collectionName string, 
 
 	return nil
 }
+
+func CreateGame(ctx context.Context, db *mongo.Database, collectionName string, model interface{}) error {
+	collection := db.Collection(collectionName)
+
+	_, err := collection.InsertOne(ctx, model)
+	if err != nil {
+		return err
+	}
+
+	// m.ID = res.InsertedID.(primitive.ObjectID)
+	return nil
+}
+
+func GetGames(ctx context.Context, db *mongo.Database, collectionName string, filter interface{}, result *[]Game) error {
+	collection := db.Collection(collectionName)
+	cur, err := collection.Find(ctx, filter)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer cur.Close(ctx)
+	for cur.Next(ctx) {
+		// To decode into a struct, use cursor.Decode()
+		var game Game
+		err := cur.Decode(&game)
+
+		if err != nil {
+			log.Fatal(err)
+		}
+		*result = append(*result, game)
+
+	}
+	if err := cur.Err(); err != nil {
+		return err
+	}
+	return nil
+}
+
+func UpdateGame(ctx context.Context, db *mongo.Database, collectionName string, filter interface{}, updategame interface{}) error {
+	collection := db.Collection(collectionName)
+
+	_, err := collection.UpdateOne(ctx, filter, updategame)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}

@@ -13,13 +13,14 @@ func (app *Config) Routes() {
 	app.Router.POST("/updateuser", UpdateUserController(app))
 	app.Router.POST("/verifyOTP", VerifyOTP(app))
 	app.Router.GET("/getuser", ValidateJWT(app), GetUserController(app))
-	app.Router.POST("/addgame")
-	app.Router.POST("/reschedulegame")
-	app.Router.POST("/deactivategame")
-	app.Router.POST("/addbet")
-	app.Router.POST("/declairewinner")
-	app.Router.POST("/addcash")
-	app.Router.POST("/withdrawmoney")
+	app.Router.POST("/addgame", AddGameController(app))
+	app.Router.POST("/getgames", GetGamesController(app))
+	app.Router.POST("/reschedulegame/", RescheduleGameController(app))
+	// app.Router.POST("/deactivategame")
+	app.Router.POST("/addbet/:userid",AddBetController(app))
+	app.Router.POST("/declairewinner", DeclairWinnerController(app))
+	app.Router.POST("/addcash/:userid",AddCashController(app))
+	app.Router.POST("/withdrawcash/:userid",WithdrawCashController(app))
 
 	/*
 		User{Name, phone, balance,photo, email(u), bets[cb]}

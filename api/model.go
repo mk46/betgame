@@ -1,12 +1,19 @@
 package api
 
-import "time"
+import (
+	"time"
+
+	"go.mongodb.org/mongo-driver/bson/primitive"
+)
 
 type User struct {
-	Name    string `json:"name,omitempty" validate:"required" bson:"name"`
-	Phone   string `json:"phone,omitempty" validate:"required" bson:"phone"`
-	Email   string `json:"email,omitempty" validate:"required" bson:"email"`
-	Balance int    `json:"balance,omitempty" validate:"required" bson:"balance"`
+	ID           primitive.ObjectID `json:"id,omitempty" validate:"required" bson:"_id"`
+	Name         string             `json:"name,omitempty" validate:"required" bson:"name"`
+	Phone        string             `json:"phone,omitempty" validate:"required" bson:"phone"`
+	Email        string             `json:"email,omitempty" validate:"required" bson:"email"`
+	Balance      int                `json:"balance,omitempty" validate:"required" bson:"balance"`
+	CurrentOrder []Bet              `json:"current_order,omitempty" validate:"required" bson:"current_order"`
+	PastOrder    []BetHistory       `json:"past_order,omitempty" validate:"required" bson:"past_order"`
 }
 
 type ParsePhone struct {
@@ -25,8 +32,32 @@ type OTP struct {
 }
 
 type Game struct {
-	Name   string    `json:"name,omitempty" validate:"required"`
-	Start  time.Time `json:"start,omitempty" validate:"required"`
-	End    time.Time `json:"end,omitempty" validate:"required"`
-	Result time.Time `json:"result,omitempty" validate:"required"`
+	ID     primitive.ObjectID `json:"id,omitempty" validate:"required" bson:"_id"`
+	Name   string             `json:"name,omitempty" validate:"required" bson:"name"`
+	Start  time.Time          `json:"start,omitempty" validate:"required" bson:"start"`
+	End    time.Time          `json:"end,omitempty" validate:"required" bson:"end"`
+	Result int                `json:"result,omitempty" validate:"required" bson:"result"`
+}
+
+type RescheduleGame struct {
+	ID    primitive.ObjectID `json:"id,omitempty" validate:"required"`
+	Start time.Time          `json:"start,omitempty" validate:"required"`
+	End   time.Time          `json:"end,omitempty" validate:"required"`
+}
+
+type Bet struct {
+	Amount   int                `json:"amount,omitempty" validate:"required" bson:"amount"`
+	Number   int                `json:"number,omitempty" validate:"required" bson:"number"`
+	GameID   primitive.ObjectID `json:"gameid,omitempty" validate:"required" bson:"gameid"`
+	PlacedAt time.Time          `json:"placed_at,omitempty" validate:"required" bson:"placed_at"`
+}
+
+type BetHistory struct {
+	PlacedBet  Bet       `json:"placed_bet,omitempty" validate:"required" bson:"placed_bet"`
+	ResultTime time.Time `json:"result_time,omitempty" validate:"required" bson:"result_time"`
+	Winner     bool      `json:"winner,omitempty" validate:"required" bson:"winner"`
+}
+
+type Cash struct {
+	Amount int `json:"amount,omitempty" validate:"required"`
 }
