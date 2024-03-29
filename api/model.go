@@ -7,13 +7,11 @@ import (
 )
 
 type User struct {
-	ID           primitive.ObjectID `json:"id,omitempty" validate:"required" bson:"_id"`
-	Name         string             `json:"name,omitempty" validate:"required" bson:"name"`
-	Phone        string             `json:"phone,omitempty" validate:"required" bson:"phone"`
-	Email        string             `json:"email,omitempty" validate:"required" bson:"email"`
-	Balance      int                `json:"balance,omitempty" validate:"required" bson:"balance"`
-	CurrentOrder []Bet              `json:"current_order,omitempty" validate:"required" bson:"current_order"`
-	PastOrder    []BetHistory       `json:"past_order,omitempty" validate:"required" bson:"past_order"`
+	ID      primitive.ObjectID `json:"id,omitempty" validate:"required" bson:"_id"`
+	Name    string             `json:"name,omitempty" validate:"required" bson:"name"`
+	Phone   string             `json:"phone,omitempty" validate:"required" bson:"phone"`
+	Email   string             `json:"email,omitempty" validate:"required" bson:"email"`
+	Balance int                `json:"balance,omitempty" validate:"required" bson:"balance"`
 }
 
 type ParsePhone struct {
@@ -46,6 +44,8 @@ type RescheduleGame struct {
 }
 
 type Bet struct {
+	ID       primitive.ObjectID `json:"id,omitempty" validate:"required" bson:"_id"`
+	UserId   primitive.ObjectID `json:"userid,omitempty" validate:"required" bson:"userid"`
 	Amount   int                `json:"amount,omitempty" validate:"required" bson:"amount"`
 	Number   int                `json:"number,omitempty" validate:"required" bson:"number"`
 	GameID   primitive.ObjectID `json:"gameid,omitempty" validate:"required" bson:"gameid"`
@@ -53,11 +53,17 @@ type Bet struct {
 }
 
 type BetHistory struct {
-	PlacedBet  Bet       `json:"placed_bet,omitempty" validate:"required" bson:"placed_bet"`
-	ResultTime time.Time `json:"result_time,omitempty" validate:"required" bson:"result_time"`
-	Winner     bool      `json:"winner,omitempty" validate:"required" bson:"winner"`
+	ID         primitive.ObjectID `json:"id,omitempty" validate:"required" bson:"_id"`
+	PlacedBet  Bet                `json:"placed_bet,omitempty" validate:"required" bson:"placed_bet"`
+	ResultTime time.Time          `json:"result_time,omitempty" validate:"required" bson:"result_time"`
+	Winner     bool               `json:"winner,omitempty" validate:"required" bson:"winner"`
 }
 
 type Cash struct {
 	Amount int `json:"amount,omitempty" validate:"required"`
+}
+
+type DeclareWinner struct {
+	GameID primitive.ObjectID `json:"gameid,omitempty" validate:"required" bson:"gameid"`
+	Result int                `json:"result,omitempty" validate:"required" bson:"result"`
 }

@@ -42,7 +42,8 @@ func LoginUserController(app *Config) gin.HandlerFunc {
 
 		err = CreateUser(context.Background(), db, "users", &user)
 		if err != nil {
-			panic(err)
+			ctx.JSON(http.StatusForbidden, JsonResponse{Status: http.StatusForbidden, Message: "failed to insert User in DB", Data: err.Error()})
+			return
 		}
 
 		log.Printf("User inserted to db: %v\n", user)
@@ -71,7 +72,8 @@ func UpdateUserController(app *Config) gin.HandlerFunc {
 		updateuser := bson.M{"$set": bson.M{"email": user.Email, "name": user.Name}}
 		err := UpdateUser(context.Background(), db, "users", bson.M{"phone": user.Phone}, updateuser)
 		if err != nil {
-			panic(err)
+			ctx.JSON(http.StatusForbidden, JsonResponse{Status: http.StatusForbidden, Message: "failed to update User in DB", Data: err.Error()})
+			return
 		}
 		log.Printf("User updated in db: %v\n", user)
 
@@ -114,7 +116,8 @@ func GetUserController(app *Config) gin.HandlerFunc {
 		var user User
 		err := GetUser(context.Background(), db, "users", bson.M{"phone": phone}, &user)
 		if err != nil {
-			panic(err)
+			ctx.JSON(http.StatusForbidden, JsonResponse{Status: http.StatusForbidden, Message: "failed to get User from DB", Data: err.Error()})
+			return
 		}
 		log.Printf("User fetched: %v\n", user)
 		ctx.JSON(http.StatusAccepted, JsonResponse{Status: http.StatusAccepted, Message: "Your authorized to access your data", Data: user})
@@ -135,7 +138,8 @@ func AddGameController(app *Config) gin.HandlerFunc {
 		game.ID = primitive.NewObjectID()
 		err := CreateGame(context.Background(), db, "games", &game)
 		if err != nil {
-			panic(err)
+			ctx.JSON(http.StatusForbidden, JsonResponse{Status: http.StatusForbidden, Message: "failed to insert Game in DB", Data: err.Error()})
+			return
 		}
 
 		log.Printf("Game inserted to db: %v\n", game)
@@ -172,9 +176,10 @@ func RescheduleGameController(app *Config) gin.HandlerFunc {
 		}
 
 		updategame := bson.M{"$set": bson.M{"start": rgame.Start, "end": rgame.End}}
-		err := UpdateUser(context.Background(), db, "games", bson.M{"_id": rgame.ID}, updategame)
+		err := UpdateGame(context.Background(), db, "games", bson.M{"_id": rgame.ID}, updategame)
 		if err != nil {
-			panic(err)
+			ctx.JSON(http.StatusForbidden, JsonResponse{Status: http.StatusForbidden, Message: "failed to update Game in DB", Data: err.Error()})
+			return
 		}
 		log.Printf("Game updated in db: %v\n", rgame)
 
@@ -201,6 +206,7 @@ func AddBetController(app *Config) gin.HandlerFunc {
 			return
 		}
 
+		// Check user exists or not
 		err = GetUser(context.Background(), db, "users", bson.M{"_id": id}, &user)
 		if err != nil {
 			ctx.JSON(http.StatusForbidden, JsonResponse{Status: http.StatusForbidden, Message: "failed to parse user from provided id ", Data: err.Error()})
@@ -213,16 +219,27 @@ func AddBetController(app *Config) gin.HandlerFunc {
 			return
 		}
 		user.Balance -= bet.Amount
-		user.CurrentOrder = append(user.CurrentOrder, bet)
+		bet.UserId = user.ID
+		bet.ID = primitive.NewObjectID()
+		if bet.PlacedAt.IsZero() {
+			bet.PlacedAt = time.Now().UTC()
+		}
 
-		updateuser := bson.M{"$set": bson.M{"balance": user.Balance, "current_order": user.CurrentOrder}}
-		err = UpdateUser(context.Background(), db, "users", bson.M{"_id": user.ID}, updateuser)
+		err = CreateBet(context.Background(), db, "bets", &bet)
 		if err != nil {
 			ctx.JSON(http.StatusForbidden, JsonResponse{Status: http.StatusForbidden, Message: "failed to update Bet in DB for uid: " + id.Hex(), Data: err.Error()})
 			return
 		}
-
 		log.Printf("Bet placed for user:%v in db\n", user)
+
+		updatebal := bson.M{"$set": bson.M{"balance": user.Balance}}
+		err = UpdateUser(context.Background(), db, "users", bson.M{"_id": user.ID}, updatebal)
+		if err != nil {
+			ctx.JSON(http.StatusForbidden, JsonResponse{Status: http.StatusForbidden, Message: "failed to update Balance in DB for uid: " + id.Hex(), Data: err.Error()})
+			return
+		}
+
+		log.Printf("Balance updated for user:%v in db\n", user)
 
 		ctx.JSON(http.StatusOK, JsonResponse{Status: http.StatusOK, Message: "Bet placed successfully", Data: user})
 
@@ -230,7 +247,80 @@ func AddBetController(app *Config) gin.HandlerFunc {
 }
 
 func DeclairWinnerController(app *Config) gin.HandlerFunc {
-	return func(ctx *gin.Context) {}
+	return func(ctx *gin.Context) {
+		_, cancel := context.WithTimeout(context.Background(), appTimeout)
+		defer cancel()
+		var winner DeclareWinner
+		if err := ctx.BindJSON(&winner); err != nil {
+			ctx.JSON(http.StatusForbidden, JsonResponse{Status: http.StatusForbidden, Message: "failed to parse request body while declaring winner", Data: err.Error()})
+			return
+		}
+
+		// Get all bets associated with gameId
+
+		var bets []Bet
+
+		if err := GetBets(context.Background(), db, "bets", bson.M{"gameid": winner.GameID}, &bets); err != nil {
+			ctx.JSON(http.StatusForbidden, JsonResponse{Status: http.StatusForbidden, Message: "failed to parse Games data from DB", Data: err.Error()})
+
+			return
+		}
+
+		var bethistories []interface{}
+
+		for _, bet := range bets {
+			bethistory := BetHistory{
+				ID:         primitive.NewObjectID(),
+				ResultTime: time.Now().UTC(),
+				PlacedBet:  bet,
+			}
+			if winner.Result == bet.Number {
+				bethistory.Winner = true
+
+			}
+			// Processing winning amount to user
+
+			// Get user from bet
+			var user User
+			err := GetUser(context.Background(), db, "users", bson.M{"_id": bet.UserId}, &user)
+			if err != nil {
+				ctx.JSON(http.StatusForbidden, JsonResponse{Status: http.StatusForbidden, Message: "failed to parse user from provided id while declairing winner", Data: err.Error()})
+				return
+			}
+
+			if bethistory.Winner {
+				user.Balance += 3 * bet.Amount
+				updatebal := bson.M{"$set": bson.M{"balance": user.Balance}}
+				err = UpdateUser(context.Background(), db, "users", bson.M{"_id": user.ID}, updatebal)
+				if err != nil {
+					ctx.JSON(http.StatusForbidden, JsonResponse{Status: http.StatusForbidden, Message: "failed to update Balance in DB while declairing winner for uid: " + user.ID.Hex(), Data: err.Error()})
+					return
+				}
+
+				log.Printf("Balance updated for user:%v in db while declairing winner\n", user)
+
+			}
+
+			bethistories = append(bethistories, bethistory)
+		}
+
+		// Remove all bets and move to BetHistory
+
+		// Remove bets from DB
+		if err := DeleteBets(context.Background(), db, "bets", bson.M{"gameid": winner.GameID}); err != nil {
+			ctx.JSON(http.StatusForbidden, JsonResponse{Status: http.StatusForbidden, Message: "failed to remove Bets from DB", Data: err.Error()})
+			return
+		}
+
+		// Insert BetHistory to DB
+		if err := AddBetHistory(context.Background(), db, "bethistories", bethistories); err != nil {
+			ctx.JSON(http.StatusForbidden, JsonResponse{Status: http.StatusForbidden, Message: "failed to insert Bets to BetHistories in DB", Data: err.Error()})
+			return
+		}
+
+		// Done
+		ctx.JSON(http.StatusAccepted, JsonResponse{Status: http.StatusAccepted, Message: "Winner declaired successfully", Data: bets})
+	}
 }
 
 func AddCashController(app *Config) gin.HandlerFunc {
