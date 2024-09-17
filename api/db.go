@@ -1,168 +1,154 @@
 package api
 
 import (
-	"context"
-	"fmt"
 	"log"
 
-	"go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/mongo/options"
+	"gorm.io/driver/postgres"
+	"gorm.io/gorm"
 )
 
-func ConnectDB(uri string) *mongo.Client {
+func ConnectDB() *gorm.DB {
+	dbURL := "postgres://pg:pass@localhost:5432/game_db"
 
-	credential := options.Credential{
-		Username: "mongoadmin",
-		Password: "secret",
-	}
-	clientOptions := options.Client().ApplyURI(uri).SetAuth(credential)
-	client, err := mongo.Connect(context.Background(), clientOptions)
+	db, err := gorm.Open(postgres.Open(dbURL), &gorm.Config{})
 
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalln(err)
 	}
 
-	err = client.Ping(context.Background(), nil)
-	if err != nil {
-		log.Fatal(err)
+	if err = db.AutoMigrate(&User{}, &Game{}, &BetHistory{}, &Bet{}); err != nil {
+		log.Fatalln("Failed to migrate db: ", err.Error())
 	}
 
-	fmt.Println("Successfully connected to MongoDB")
-	return client
+	return db
 }
 
-func CreateUser(ctx context.Context, db *mongo.Database, collectionName string, model interface{}) error {
-	collection := db.Collection(collectionName)
-
-	_, err := collection.InsertOne(ctx, model)
-	if err != nil {
-		return err
-	}
-
-	// m.ID = res.InsertedID.(primitive.ObjectID)
-	return nil
-}
-
-func GetUser(ctx context.Context, db *mongo.Database, collectionName string, filter interface{}, result interface{}) error {
-	collection := db.Collection(collectionName)
-
-	err := collection.FindOne(ctx, filter).Decode(result)
-	if err != nil {
-		return err
+func CreateUser(db *gorm.DB, user User) error {
+	// Append to the User in User table
+	if result := db.Create(&user); result.Error != nil {
+		return result.Error
 	}
 
 	return nil
 }
 
-func UpdateUser(ctx context.Context, db *mongo.Database, collectionName string, filter interface{}, update interface{}) error {
-	collection := db.Collection(collectionName)
+func GetUserByPhone(db *gorm.DB, phone string, user *User) error {
 
-	_, err := collection.UpdateOne(ctx, filter, update)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func DeleteUser(ctx context.Context, db *mongo.Database, collectionName string, filter interface{}) error {
-	collection := db.Collection(collectionName)
-	_, err := collection.DeleteOne(ctx, filter)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func CreateGame(ctx context.Context, db *mongo.Database, collectionName string, model interface{}) error {
-	collection := db.Collection(collectionName)
-
-	_, err := collection.InsertOne(ctx, model)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func GetGames(ctx context.Context, db *mongo.Database, collectionName string, filter interface{}, result *[]Game) error {
-	collection := db.Collection(collectionName)
-	cur, err := collection.Find(ctx, filter)
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer cur.Close(ctx)
-	for cur.Next(ctx) {
-		// To decode into a struct, use cursor.Decode()
-		var game Game
-		err := cur.Decode(&game)
-
-		if err != nil {
-			log.Fatal(err)
-		}
-		*result = append(*result, game)
-
-	}
-	if err := cur.Err(); err != nil {
-		return err
+	if result := db.Where("phone=?", phone).First(user); result.Error != nil {
+		return result.Error
 	}
 	return nil
 }
 
-func UpdateGame(ctx context.Context, db *mongo.Database, collectionName string, filter interface{}, updategame interface{}) error {
-	collection := db.Collection(collectionName)
+func GetUserByID(db *gorm.DB, id int, user *User) error {
 
-	_, err := collection.UpdateOne(ctx, filter, updategame)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func CreateBet(ctx context.Context, db *mongo.Database, collectionName string, bet interface{}) error {
-	collection := db.Collection(collectionName)
-
-	_, err := collection.InsertOne(ctx, bet)
-	if err != nil {
-		return err
+	if result := db.First(user, id); result.Error != nil {
+		return result.Error
 	}
 	return nil
 }
 
-func DeleteBets(ctx context.Context, db *mongo.Database, collectionName string, filter interface{}) error {
-	collection := db.Collection(collectionName)
-	_, err := collection.DeleteMany(ctx, filter)
-	if err != nil {
+func UpdateUserByPhone(db *gorm.DB, updateuser User) error {
+	var user User
+	if err := GetUserByPhone(db, updateuser.Phone, &user); err != nil {
 		return err
 	}
-
-	return nil
-}
-
-func AddBetHistory(ctx context.Context, db *mongo.Database, collectionName string, bethistories []interface{}) error {
-	collection := db.Collection(collectionName)
-
-	_, err := collection.InsertMany(ctx, bethistories)
-	if err != nil {
-		return err
+	user.Name = updateuser.Name
+	user.Email = updateuser.Email
+	user.Balance = updateuser.Balance
+	if result := db.Save(&user); result.Error != nil {
+		return result.Error
 	}
 	return nil
 }
 
-func GetBets(ctx context.Context, db *mongo.Database, collectionName string, filter interface{}, result *[]Bet) error {
-	collection := db.Collection(collectionName)
-	cur, err := collection.Find(ctx, filter)
-	if err != nil {
+func UpdateUserByID(db *gorm.DB, userid int, updateuser User) error {
+	var user User
+	if err := GetUserByID(db, userid, &user); err != nil {
 		return err
 	}
-	defer cur.Close(ctx)
 
-	if err := cur.All(ctx, result); err != nil {
+	user.Balance = updateuser.Balance
+	if result := db.Save(&user); result.Error != nil {
+		return result.Error
+	}
+	return nil
+}
+
+func DeleteUser(db *gorm.DB, phone string) error {
+	var user User
+	if err := GetUserByPhone(db, phone, &user); err != nil {
 		return err
 	}
-	log.Println(result)
+	if result := db.Delete(&user); result.Error != nil {
+		return result.Error
+	}
+	return nil
+}
+
+func CreateGame(db *gorm.DB, game Game) error {
+	// Append to the Game in Game table
+	if result := db.Create(&game); result.Error != nil {
+		return result.Error
+	}
+	return nil
+}
+
+func GetGames(db *gorm.DB, games *[]Game) error {
+
+	if result := db.Find(games); result.Error != nil {
+		return result.Error
+	}
+	return nil
+}
+
+func UpdateGame(db *gorm.DB, gameid int, updategame Game) error {
+	var game Game
+	if result := db.First(&game, gameid); result.Error != nil {
+		return result.Error
+	}
+
+	game.Start = updategame.Start
+	game.End = updategame.End
+
+	if result := db.Save(&game); result.Error != nil {
+		return result.Error
+	}
+	return nil
+}
+
+func CreateBet(db *gorm.DB, bet Bet) error {
+	if result := db.Create(&bet); result.Error != nil {
+		return result.Error
+	}
+	return nil
+}
+
+func DeleteBets(db *gorm.DB, gameid int) error {
+	var game Game
+	if result := db.Where("gameid=?", gameid).First(&game); result.Error != nil {
+		return result.Error
+	}
+
+	if result := db.Delete(&game); result.Error != nil {
+		return result.Error
+	}
+	return nil
+}
+
+func AddBetHistory(db *gorm.DB, bethistory []BetHistory) error {
+
+	if result := db.Create(&bethistory); result.Error != nil {
+		return result.Error
+	}
+	return nil
+}
+
+func GetBets(db *gorm.DB, gameid int, bets *[]Bet) error {
+
+	if result := db.Where("gameid=?", gameid).Find(&bets); result.Error != nil {
+		return result.Error
+	}
 
 	return nil
 }

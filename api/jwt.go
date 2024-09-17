@@ -16,7 +16,7 @@ func generateJWT(phone string) (string, error) {
 
 	claims["authorized"] = true
 	claims["phone"] = phone
-	claims["exp"] = time.Now().Add(time.Minute * 1).Unix()
+	claims["exp"] = time.Now().Add(time.Minute * 10).Unix()
 
 	tokenString, err := token.SignedString(sampleSecretKey)
 
