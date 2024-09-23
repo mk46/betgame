@@ -125,12 +125,14 @@ func CreateBet(db *gorm.DB, bet Bet) error {
 }
 
 func DeleteBets(db *gorm.DB, gameid int) error {
-	var game Game
-	if result := db.Where("gameid=?", gameid).First(&game); result.Error != nil {
+	var bet Bet
+	if result := db.Where("game_id=?", gameid).First(&bet); result.Error != nil {
 		return result.Error
 	}
 
-	if result := db.Delete(&game); result.Error != nil {
+	log.Println("Fetched bet for delete", bet)
+
+	if result := db.Delete(&bet); result.Error != nil {
 		return result.Error
 	}
 	return nil
@@ -146,7 +148,7 @@ func AddBetHistory(db *gorm.DB, bethistory []BetHistory) error {
 
 func GetBets(db *gorm.DB, gameid int, bets *[]Bet) error {
 
-	if result := db.Where("gameid=?", gameid).Find(&bets); result.Error != nil {
+	if result := db.Where("game_id=?", gameid).Find(&bets); result.Error != nil {
 		return result.Error
 	}
 
