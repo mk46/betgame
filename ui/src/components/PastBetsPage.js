@@ -6,7 +6,11 @@ function PastBetsPage() {
   const navigate = useNavigate();
 
   return (
-    <Box p="6" maxW="lg" mx="auto" mt="10" boxShadow="lg" borderRadius="md">
+    <Box
+      boxShadow="md"
+      borderRadius="md"
+      overflowX="hidden"
+    >
       <Heading mb="4" textAlign="center">Past Bets</Heading>
       <Divider mb="4" />
 

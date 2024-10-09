@@ -4,7 +4,8 @@ import LoginPage from './components/LoginPage';
 import BetGamePage from './components/BetgamePage';
 import GamePage from './components/GamePage';
 import PastBetsPage from './components/PastBetsPage';
-
+import AdminView from './components/AdminView';
+import AdminLogin from './components/AdminLogin';
 function App() {
   return (
     <Router>
@@ -13,6 +14,8 @@ function App() {
         <Route path="/betgame" element={<BetGamePage />} />
         <Route path="/game" element={<GamePage />} />
         <Route path="/past-bets" element={<PastBetsPage />} />
+        <Route path="/admin" element={<AdminView />} />
+        <Route path="/login" element={<AdminLogin />} />
       </Routes>
     </Router>
   );
