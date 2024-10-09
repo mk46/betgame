@@ -9,6 +9,8 @@ func main() {
 
 	router := gin.Default()
 
+	router.Use(api.CORSMiddleware())
+
 	app := api.Config{Router: router}
 
 	app.Routes()
