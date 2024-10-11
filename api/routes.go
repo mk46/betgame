@@ -17,8 +17,12 @@ func (app *Config) Routes() {
 	app.Router.POST("/getgames", GetGamesController(app))
 	app.Router.POST("/reschedulegame/", RescheduleGameController(app))
 	app.Router.POST("/addbet/:userid", AddBetController(app))
+	app.Router.GET("/getbets/:userid", GetBetsByUserIDController(app))
 	app.Router.POST("/declairewinner/", DeclairWinnerController(app))
 	app.Router.POST("/addcash/:userid", AddCashController(app))
 	app.Router.POST("/withdrawcash/:userid", WithdrawCashController(app))
+	app.Router.GET("/getpastbets/:userid", GetPastBetsController(app))
+	app.Router.GET("/getusers", GetUsersController(app))
+	app.Router.DELETE("/deleteuser/:userid", DeleteUserController(app))
 
 }

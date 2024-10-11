@@ -60,8 +60,10 @@ type BetHistory struct {
 	gorm.Model
 	ID         int       `json:"id,omitempty" validate:"required" bson:"_id"  gorm:"primaryKey"`
 	PlacedBet  int       `json:"placed_bet,omitempty" validate:"required" bson:"placed_bet"`
+	UserId     int       `json:"userid,omitempty" validate:"required" bson:"user_id"`
 	ResultTime time.Time `json:"result_time,omitempty" validate:"required" bson:"result_time"`
 	Winner     bool      `json:"winner,omitempty" validate:"required" bson:"winner"`
+	BetAmount  int       `json:"bet_amount,omitempty" validate:"required" bson:"bet_amount"`
 }
 
 type Cash struct {
