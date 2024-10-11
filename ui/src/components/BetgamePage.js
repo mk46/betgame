@@ -1,12 +1,13 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Flex, Box, Heading, Button, Spacer, Input, Text, IconButton, Icon, Menu, MenuItem, MenuList, MenuButton, Container } from '@chakra-ui/react';
+import { Flex, Box, Heading, Button, Spacer, Input, Text, IconButton, Icon, Menu, MenuItem, MenuList, MenuButton, Container, List, ListItem } from '@chakra-ui/react';
 import { FaUser } from 'react-icons/fa';
 
 function BetGamePage() {
   const navigate = useNavigate();
   const [user, setUser] = React.useState({ name: '', phone: '', email: '', balance: 0 });
   const [isEditing, setIsEditing] = React.useState(false);
+  const [bets, setBets] = React.useState([]);
 
   React.useEffect(() => {
     const sessionId = localStorage.getItem('session-id');
@@ -27,7 +28,17 @@ function BetGamePage() {
 
     fetch('http://localhost:8080/getuser', options)
       .then(response => response.json())
-      .then(data => setUser(data.data))
+      .then(data => {
+        setUser(data.data);
+        localStorage.setItem('uid', data.data.id);
+      })
+      .catch(error => console.error(error));
+
+    fetch(`http://localhost:8080/getbets/${localStorage.getItem('uid')}`)
+      .then(response => response.json())
+      .then(data => {
+        setBets(data.data);
+      })
       .catch(error => console.error(error));
   }, []);
 
@@ -68,6 +79,7 @@ function BetGamePage() {
 
   const handleLogout = () => {
     localStorage.removeItem('session-id');
+    localStorage.removeItem('uid');
     navigate('/');
   };
 
@@ -76,8 +88,9 @@ function BetGamePage() {
       <Box p="8" display="flex" justifyContent="space-between" alignItems="center">
         <Heading mb="6" textAlign="center">Bet Game</Heading>
         <Flex justify="space-between" align="center">
-          <Button colorScheme="teal" mr="4" onClick={() => navigate('/game')}>Start a New Game</Button>
-          <Button colorScheme="teal" mr="4" onClick={() => navigate('/past-bets')}>View Past Bets</Button>
+          <Button colorScheme="teal" mr="4" onClick={() => navigate('/game')}> Add Bet</Button>
+          <Button colorScheme="teal" mr="4" onClick={() => navigate('/past-bets')}>Past Bets</Button>
+          <Text mr="4"><b>Cash:</b> ${user.balance}</Text>
           <Box align="right" mr="4">
             <Menu>
               <MenuButton as={IconButton} icon={<Icon as={FaUser} />} />
@@ -101,6 +114,21 @@ function BetGamePage() {
               <Button onClick={() => setIsEditing(false)} colorScheme="blue" variant="outline">Cancel</Button>
             </Box>
           </form>
+        </Box>
+      )}
+      {!isEditing && bets.length > 0 && (
+        <Box p="8" mt="6">
+          <Heading mb="4" textAlign="center">Your Bets</Heading>
+          <List spacing={3} align="left">
+            {bets.map(bet => (
+              <ListItem key={bet.id} padding="4" borderWidth="1px" borderRadius="md" bg="gray.50">
+                <Text><b>Game ID:</b> {bet.gameid}</Text>
+                <Text><b>Amount:</b> {bet.amount}</Text>
+                <Text><b>Number:</b> {bet.number}</Text>
+                <Text><b>Placed Time:</b> {new Date(bet.placed_at).toLocaleString()}</Text>
+              </ListItem>
+            ))}
+          </List>
         </Box>
       )}
     </Container>
