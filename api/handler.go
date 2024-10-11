@@ -267,7 +267,7 @@ func DeclairWinnerController(app *Config) gin.HandlerFunc {
 
 		var bets []Bet
 
-		if err := GetBets(db, winner.GameID, &bets); err != nil {
+		if err := GetBetsbyGameID(db, winner.GameID, &bets); err != nil {
 			ctx.JSON(http.StatusForbidden, JsonResponse{Status: http.StatusForbidden, Message: "failed to parse Games data from DB", Data: err.Error()})
 
 			return
@@ -279,6 +279,8 @@ func DeclairWinnerController(app *Config) gin.HandlerFunc {
 			bethistory := BetHistory{
 				ResultTime: time.Now().UTC(),
 				PlacedBet:  bet.ID,
+				UserId:     bet.UserId,
+				BetAmount:  bet.Amount,
 			}
 			if winner.Result == bet.Number {
 				bethistory.Winner = true
@@ -404,5 +406,71 @@ func WithdrawCashController(app *Config) gin.HandlerFunc {
 
 		ctx.JSON(http.StatusOK, JsonResponse{Status: http.StatusOK, Message: "Cash withdrew successfully", Data: user})
 
+	}
+}
+
+func GetBetsByUserIDController(app *Config) gin.HandlerFunc {
+	return func(ctx *gin.Context) {
+		// Fetched UserID from request param
+		userid, err := strconv.Atoi(ctx.Param("userid"))
+		if err != nil {
+			ctx.JSON(http.StatusForbidden, JsonResponse{Status: http.StatusForbidden, Message: "failed to parse userid from request body while fetching Bets", Data: err.Error()})
+			return
+		}
+		var bets []Bet
+		err = GetBetsByUserID(db, userid, &bets)
+		if err != nil {
+			ctx.JSON(http.StatusForbidden, JsonResponse{Status: http.StatusForbidden, Message: "failed to get Bets from DB", Data: err.Error()})
+			return
+		}
+		ctx.JSON(http.StatusOK, JsonResponse{Status: http.StatusOK, Message: "Bets fetched successfully", Data: bets})
+	}
+}
+
+func GetPastBetsController(app *Config) gin.HandlerFunc {
+	return func(ctx *gin.Context) {
+		// Fetched UserID from request param
+		userid, err := strconv.Atoi(ctx.Param("userid"))
+		if err != nil {
+			ctx.JSON(http.StatusForbidden, JsonResponse{Status: http.StatusForbidden, Message: "failed to parse userid from request body while fetching past Bets", Data: err.Error()})
+			return
+		}
+		var pastbets []BetHistory
+		err = GetPastBets(db, userid, &pastbets)
+		if err != nil {
+			ctx.JSON(http.StatusForbidden, JsonResponse{Status: http.StatusForbidden, Message: "failed to get pas Bets from DB", Data: err.Error()})
+			return
+		}
+		ctx.JSON(http.StatusOK, JsonResponse{Status: http.StatusOK, Message: "Past Bets fetched successfully", Data: pastbets})
+	}
+}
+
+func GetUsersController(app *Config) gin.HandlerFunc {
+	return func(ctx *gin.Context) {
+		// Fetched UserID from request param
+		var users []User
+		err := GetUsers(db, &users)
+		if err != nil {
+			ctx.JSON(http.StatusForbidden, JsonResponse{Status: http.StatusForbidden, Message: "failed to get Users from DB", Data: err.Error()})
+			return
+		}
+		ctx.JSON(http.StatusOK, JsonResponse{Status: http.StatusOK, Message: "Users fetched successfully", Data: users})
+	}
+}
+
+func DeleteUserController(app *Config) gin.HandlerFunc {
+	return func(ctx *gin.Context) {
+		// Fetched UserID from request param
+		userid, err := strconv.Atoi(ctx.Param("userid"))
+		if err != nil {
+			ctx.JSON(http.StatusForbidden, JsonResponse{Status: http.StatusForbidden, Message: "failed to parse userid from request body while deleting User", Data: err.Error()})
+			return
+		}
+		err = DeleteUserbyID(db, userid)
+		if err != nil {
+			ctx.JSON(http.StatusForbidden, JsonResponse{Status: http.StatusForbidden, Message: "failed to delete User from DB", Data: err.Error()})
+			return
+		}
+		ctx.JSON(http.StatusOK, JsonResponse{Status: http.StatusOK, Message: "User deleted successfully", Data: nil})
 	}
 }

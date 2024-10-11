@@ -25,7 +25,7 @@ func ConnectDB() *gorm.DB {
 
 func CreateUser(db *gorm.DB, user User) error {
 	// Append to the User in User table
-	if result := db.Create(&user); result.Error != nil {
+	if result := db.FirstOrCreate(&user, User{Phone: user.Phone}); result.Error != nil {
 		return result.Error
 	}
 
@@ -146,11 +146,47 @@ func AddBetHistory(db *gorm.DB, bethistory []BetHistory) error {
 	return nil
 }
 
-func GetBets(db *gorm.DB, gameid int, bets *[]Bet) error {
+func GetBetsbyGameID(db *gorm.DB, gameid int, bets *[]Bet) error {
 
 	if result := db.Where("game_id=?", gameid).Find(&bets); result.Error != nil {
 		return result.Error
 	}
 
+	return nil
+}
+
+func GetBetsByUserID(db *gorm.DB, userid int, bets *[]Bet) error {
+
+	if result := db.Where("user_id=?", userid).Find(&bets); result.Error != nil {
+		return result.Error
+	}
+	return nil
+}
+
+func GetPastBets(db *gorm.DB, userid int, pastbets *[]BetHistory) error {
+
+	if result := db.Where("user_id=?", userid).Find(&pastbets); result.Error != nil {
+		return result.Error
+	}
+	return nil
+}
+
+func GetUsers(db *gorm.DB, users *[]User) error {
+
+	if result := db.Find(&users); result.Error != nil {
+		return result.Error
+	}
+	return nil
+}
+
+
+func DeleteUserbyID(db *gorm.DB, userid int) error {
+	var user User
+	if result := db.First(&user, userid); result.Error != nil {
+		return result.Error
+	}
+	if result := db.Delete(&user); result.Error != nil {
+		return result.Error
+	}
 	return nil
 }
